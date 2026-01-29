@@ -160,6 +160,46 @@ const getTutorAvailability = async (
   }
 };
 
+/* Get Single Availability Slot */
+const getAvailabilitySlotById = async (
+  userId: string,
+  slotId: string
+) => {
+  try {
+    // Get tutor profile
+    const tutorProfile = await prisma.tutorProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!tutorProfile) {
+      throw new Error('Tutor profile not found');
+    }
+
+    // Get slot and verify ownership
+    const availabilitySlot = await prisma.availabilitySlot.findFirst({
+      where: {
+        id: slotId,
+        tutorProfileId: tutorProfile.id
+      }
+    });
+
+    if (!availabilitySlot) {
+      throw new Error('Availability slot not found or access denied');
+    }
+
+    return {
+      success: true,
+      availabilitySlot
+    };
+  } catch (error: any) {
+    console.error('Get availability slot error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to get availability slot'
+    };
+  }
+};
+
 
 
 
@@ -169,5 +209,6 @@ const getTutorAvailability = async (
 export const availabilityService = {
   createAvailabilitySlot, 
   getTutorAvailability,
-  
+  getAvailabilitySlotById,
+
 };

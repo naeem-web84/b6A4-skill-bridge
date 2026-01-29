@@ -18,6 +18,13 @@ router.get(
   availabilityController.getTutorAvailability
 );
 
+// Get single availability slot
+router.get(
+  '/:Id',
+  auth(UserRole.TUTOR),
+  availabilityController.getAvailabilitySlot
+);
+
 
  
 export const availabilityRouter: Router = router; 

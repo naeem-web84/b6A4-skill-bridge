@@ -1,4 +1,4 @@
- import { Request, Response } from 'express'; 
+import { Request, Response } from 'express'; 
 import { availabilityService } from './management.service';
 
 /* Create Availability Slot */
@@ -51,7 +51,7 @@ const createAvailabilitySlot = async (req: Request, res: Response) => {
       });
     }
 
-    // Build input object with explicit typing
+    // Build input object
     const input: any = {
       date: slotDate,
       startTime: startDate,
@@ -130,7 +130,7 @@ const getTutorAvailability = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      data: (result as any).availabilitySlots
+      data: result.availabilitySlots
     });
   } catch (error: any) {
     console.error('Controller error getting availability:', error);
@@ -141,10 +141,59 @@ const getTutorAvailability = async (req: Request, res: Response) => {
   }
 };
 
+ 
+const getAvailabilitySlot = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+ 
+    const extractSlotId = (idParam: string | string[] | undefined): string | null => {
+      if (!idParam) return null;
+      
+      if (Array.isArray(idParam)) {
+        return idParam[0] || null;
+      }
+      
+      return idParam;
+    };
 
+    const slotId = extractSlotId(req.params.Id);
+    
+    if (!slotId || slotId.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Slot ID is required'
+      });
+    }
+
+    const result = await availabilityService.getAvailabilitySlotById(userId, slotId);
+    
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: result.availabilitySlot
+    });
+  } catch (error: any) {
+    console.error('Controller error getting slot:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
 
 /* Export */
 export const availabilityController = {
   createAvailabilitySlot, 
   getTutorAvailability,
+  getAvailabilitySlot,
 };
