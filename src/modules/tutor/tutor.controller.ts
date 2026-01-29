@@ -2,7 +2,7 @@
 import { Request, Response } from 'express'; 
 import { tutorService } from './tutor.service';
 
-// Controller functions
+/* Create Tutor Profile */
 const createTutorProfile = async (req: Request, res: Response) => {
     try {
         const userId = req.user?.id;
@@ -46,16 +46,10 @@ const createTutorProfile = async (req: Request, res: Response) => {
             return res.status(400).json(result);
         }
 
-        if (!result.success) {
-            return res.status(400).json(result);
-        }
-
-        const successResult = result as { success: true; message: string; tutorProfile: any };
-
         return res.status(201).json({
             success: true,
             message: 'Tutor profile created successfully',
-            data: successResult.tutorProfile
+            data: (result as any).tutorProfile
         });
     } catch (error: any) {
         console.error('Controller error creating tutor profile:', error);
@@ -66,9 +60,42 @@ const createTutorProfile = async (req: Request, res: Response) => {
     }
 };
 
+/* Get Tutor Profile */
+const getTutorProfile = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?.id;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
 
+        const result = await tutorService.getTutorProfileByUserId(userId);
+        
+        if (!result.success) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tutor profile not found'
+            });
+        }
 
-// Export as object exactly like the example
+        return res.status(200).json({
+            success: true,
+            data: (result as any).profile
+        });
+    } catch (error: any) {
+        console.error('Controller error getting tutor profile:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+/* Export */
 export const tutorController = {
-    createTutorProfile, 
+    createTutorProfile,
+    getTutorProfile
 };

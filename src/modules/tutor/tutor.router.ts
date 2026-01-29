@@ -8,5 +8,9 @@ const router: Router = Router();
 router.post('/create-profile', auth(UserRole.STUDENT), tutorController.createTutorProfile);
 
 
+// Get tutor's own profile
+router.get('/profile', auth(UserRole.TUTOR), tutorController.getTutorProfile);
+
+
 
 export const tutorRouter: Router = router;

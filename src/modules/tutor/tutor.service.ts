@@ -106,9 +106,39 @@ const createTutorProfile = async (
   }
 };
 
+/*  Get Tutor Profile by User ID */
+const getTutorProfileByUserId = async (userId: string) => {
+  try {
+    const profile = await prisma.tutorProfile.findUnique({
+      where: { userId },
+      include: {
+        categories: {
+          include: { category: true },
+        },
+        availabilitySlots: {
+          where: {
+            isBooked: false,
+            date: { gte: new Date() },
+          },
+          orderBy: { date: "asc" },
+        },
+      },
+    });
+
+    return { success: true, profile };
+  } catch (error) {
+    console.error("Get tutor profile error:", error);
+    return {
+      success: false,
+      message: "Failed to get tutor profile",
+    };
+  }
+};
+
 
 
  
 export const tutorService = {
   createTutorProfile, 
+  getTutorProfileByUserId,
 };
