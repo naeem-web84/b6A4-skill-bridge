@@ -1,0 +1,268 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  STUDENT
+  TUTOR
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum NotificationType {
+  BOOKING
+  REVIEW
+  PAYMENT
+  SYSTEM
+  REMINDER
+}
+
+// ==================== CATEGORY ====================
+
+model Category {
+  id              String          @id @default(uuid())
+  name            String          @unique
+  description     String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  tutorCategories TutorCategory[]
+  bookings        Booking[]
+
+  @@map("categories")
+}
+
+// ==================== STUDENT PROFILE ====================
+
+model StudentProfile {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  grade     String?
+  subjects  String[]
+  bookings  Booking[] @relation("StudentBookings")
+  reviews   Review[]  @relation("StudentReviews")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("student_profiles")
+}
+
+// ==================== TUTOR PROFILE ====================
+
+model TutorProfile {
+  id                String             @id @default(uuid())
+  userId            String             @unique
+  headline          String
+  bio               String?
+  hourlyRate        Float
+  experienceYears   Int                @default(0)
+  education         String?
+  certifications    String?
+  rating            Float              @default(0)
+  totalReviews      Int                @default(0)
+  completedSessions Int                @default(0)
+  categories        TutorCategory[]
+  availabilitySlots AvailabilitySlot[]
+  bookings          Booking[]          @relation("TutorBookings")
+  reviews           Review[]           @relation("TutorReviews")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@map("tutor_profiles")
+}
+
+// ==================== TUTOR ↔ CATEGORY ====================
+
+model TutorCategory {
+  id               String       @id @default(uuid())
+  tutorProfileId   String
+  categoryId       String
+  proficiencyLevel String?
+  tutorProfile     TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  category         Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now())
+
+  @@unique([tutorProfileId, categoryId])
+  @@map("tutor_categories")
+}
+
+// ==================== AVAILABILITY SLOTS ====================
+
+model AvailabilitySlot {
+  id               String       @id @default(uuid())
+  tutorProfileId   String
+  tutorProfile     TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  date             DateTime
+  startTime        DateTime
+  endTime          DateTime
+  isRecurring      Boolean      @default(false)
+  recurringPattern String?
+  validFrom        DateTime?
+  validUntil       DateTime?
+  isBooked         Boolean      @default(false)
+  // Relation
+  booking          Booking?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@map("availability_slots")
+}
+
+// ==================== BOOKINGS ====================
+
+model Booking {
+  id                 String            @id @default(uuid())
+  // User IDs (Better Auth থেকে আসবে)
+  studentUserId      String
+  tutorUserId        String
+  // Profile references
+  studentProfileId   String
+  tutorProfileId     String
+  categoryId         String
+  availabilitySlotId String?           @unique
+  // Relations
+  studentProfile     StudentProfile    @relation("StudentBookings", fields: [studentProfileId], references: [id], onDelete: Cascade)
+  tutorProfile       TutorProfile      @relation("TutorBookings", fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  category           Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  availabilitySlot   AvailabilitySlot? @relation(fields: [availabilitySlotId], references: [id])
+  // Booking details
+  bookingDate        DateTime
+  startTime          DateTime
+  endTime            DateTime
+  duration           Int
+  status             BookingStatus     @default(PENDING)
+  amount             Float
+  paymentId          String?
+  isPaid             Boolean           @default(false)
+  meetingLink        String?
+  notes              String?
+  review             Review?           @relation("BookingReview")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@map("bookings")
+}
+
+// ==================== REVIEWS ====================
+
+model Review {
+  id               String         @id @default(uuid())
+  // References
+  studentUserId    String
+  studentProfileId String
+  tutorProfileId   String
+  bookingId        String         @unique
+  // Relations
+  studentProfile   StudentProfile @relation("StudentReviews", fields: [studentProfileId], references: [id], onDelete: Cascade)
+  tutorProfile     TutorProfile   @relation("TutorReviews", fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  booking          Booking        @relation("BookingReview", fields: [bookingId], references: [id], onDelete: Cascade)
+  // Review content
+  rating           Int            @default(5)
+  comment          String?
+  isVerified       Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([studentProfileId, bookingId])
+  @@map("reviews")
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  title       String
+  message     String?
+  type        NotificationType
+  relatedId   String?
+  relatedType String?
+  isRead      Boolean          @default(false)
+  isDeleted   Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  role   String  @default("STUDENT")
+  status String? @default("Active")
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
