@@ -2,55 +2,56 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import nodemailer from "nodemailer";
- 
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
-  secure: false, // Use true for port 465, false for port 587
+  secure: false,
   auth: {
     user: process.env.APP_USER,
     pass: process.env.APP_PASS,
   },
 });
 
-
 export const auth = betterAuth({
-    database: prismaAdapter(prisma, {
-        provider: "postgresql",
-    }),
-    trustedOrigins: [process.env.APP_URL!],
-    user: {
-        additionalFields: {
-            role: {
-                type: "string",
-                required: true,
-                defaultValue: "STUDENT",
-                input: true
-            },
-            status: {
-                type: "string",
-                defaultValue: "Active",
-                required: false
-            }
-        }
-    },
-    emailAndPassword: {
-        enabled: true,
-        autoSignIn: false,
-        requireEmailVerification: true
-    },
-    emailVerification: {
-        sendOnSignUp: true,
-        autoSignInAfterVerification: true,
-        sendVerificationEmail: async ({ user, url, token }, request) => {
-            try {
-                const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`
-                const info = await transporter.sendMail({
-                    from: '"Skill Bridge" <skillBridge@team.com>',
-                    to: user.email,
-                    subject: "Please verify your email!",
-                    html: `<!DOCTYPE html>
+  database: prismaAdapter(prisma, {
+    provider: "postgresql",
+  }),
+  trustedOrigins: [process.env.APP_URL!],
+  
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: true,
+        defaultValue: "STUDENT",
+        input: true
+      },
+      status: {
+        type: "string",
+        defaultValue: "Active",
+        required: false
+      }
+    }
+  },
+  
+  emailAndPassword: {
+    enabled: true,
+    autoSignIn: false,
+    requireEmailVerification: true
+  },
+  
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url, token }, request) => {
+      try {
+        const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`
+        const info = await transporter.sendMail({
+          from: '"Skill Bridge" <skillBridge@team.com>',
+          to: user.email,
+          subject: "Please verify your email!",
+          html: `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -154,7 +155,7 @@ export const auth = betterAuth({
       </div>
 
       <p>
-        If the button doesn’t work, copy and paste the link below into your browser:
+        If the button doesn't work, copy and paste the link below into your browser:
       </p>
 
       <p class="link">
@@ -178,19 +179,18 @@ export const auth = betterAuth({
     </div>
   </div>
 </body>
-</html>
-`
-                });
+</html>`
+        });
 
-                console.log("Message sent:", info.messageId);
-            } catch (err) {
-                console.error(err)
-                throw err;
-            }
-        },
+        console.log("Verification email sent:", info.messageId);
+      } catch (err) {
+        console.error("Error sending verification email:", err);
+        throw err;
+      }
     },
+  },
 
-     socialProviders: {
+  socialProviders: {
     google: {
       prompt: "select_account consent",
       accessType: "offline",
@@ -198,4 +198,64 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
   },
+
+  // ✅ ADD THIS HOOK TO AUTO-CREATE STUDENT PROFILE
+  hooks: {
+    afterSignUp: async ({ user }) => {
+      try {
+        console.log(`📝 New user signed up: ${user.email} with role: ${user.role}`);
+        
+        // Auto-create student profile if role is STUDENT
+        if (user.role === "STUDENT") {
+          console.log(`🎓 Creating student profile for: ${user.id}`);
+          
+          // Match EXACTLY with your Prisma schema fields
+          await prisma.studentProfile.create({
+            data: {
+              userId: user.id,
+              // These are the exact fields from your schema
+              grade: null,           // String? - optional
+              subjects: [],          // String[] - default empty array
+              // createdAt and updatedAt will be auto-set by Prisma
+            }
+          });
+          
+          console.log(`✅ Successfully created student profile for user: ${user.id}`);
+        } else {
+          console.log(`ℹ️ User role is ${user.role}, skipping profile creation`);
+        }
+      } catch (error: any) {
+        console.error("❌ Error creating student profile:", error);
+        // Don't throw error here - we don't want signup to fail if profile creation fails
+        // Log it and continue
+      }
+    },
+    
+    // Optional: Also handle social login signups
+    afterSocialSignUp: async ({ user }) => {
+      try {
+        console.log(`📝 New social user signed up: ${user.email} with role: ${user.role}`);
+        
+        if (user.role === "STUDENT") {
+          // Check if profile already exists (in case of duplicate calls)
+          const existingProfile = await prisma.studentProfile.findUnique({
+            where: { userId: user.id }
+          });
+          
+          if (!existingProfile) {
+            await prisma.studentProfile.create({
+              data: {
+                userId: user.id,
+                grade: null,
+                subjects: []
+              }
+            });
+            console.log(`✅ Created student profile for social user: ${user.id}`);
+          }
+        }
+      } catch (error: any) {
+        console.error("❌ Error creating student profile for social user:", error);
+      }
+    }
+  }
 });
