@@ -97,9 +97,77 @@ const createAvailabilitySlot = async (
 };
 
 
+/* Get Tutor's Availability Slots */
+const getTutorAvailability = async (
+  userId: string,
+  filters?: {
+    date?: Date;
+    startDate?: Date;
+    endDate?: Date;
+    isBooked?: boolean;
+  }
+) => {
+  try {
+    // Get tutor profile
+    const tutorProfile = await prisma.tutorProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!tutorProfile) {
+      throw new Error('Tutor profile not found');
+    }
+
+    // Build where conditions
+    const whereConditions: any = {
+      tutorProfileId: tutorProfile.id
+    };
+
+    if (filters?.date) {
+      whereConditions.date = filters.date;
+    }
+
+    if (filters?.startDate && filters?.endDate) {
+      whereConditions.date = {
+        gte: filters.startDate,
+        lte: filters.endDate
+      };
+    }
+
+    if (filters?.isBooked !== undefined) {
+      whereConditions.isBooked = filters.isBooked;
+    }
+
+    // Get availability slots
+    const availabilitySlots = await prisma.availabilitySlot.findMany({
+      where: whereConditions,
+      orderBy: [
+        { date: 'asc' },
+        { startTime: 'asc' }
+      ]
+    });
+
+    return {
+      success: true,
+      availabilitySlots
+    };
+  } catch (error: any) {
+    console.error('Get tutor availability error:', error);
+    return {
+      success: false,
+      message: 'Failed to get availability slots',
+      availabilitySlots: []
+    };
+  }
+};
+
+
+
+
 
 
 /* Export */
 export const availabilityService = {
   createAvailabilitySlot, 
+  getTutorAvailability,
+  
 };

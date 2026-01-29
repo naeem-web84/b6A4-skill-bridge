@@ -11,6 +11,13 @@ router.post(
   availabilityController.createAvailabilitySlot
 );
 
+ // Get tutor's availability slots
+router.get(
+  '/',
+  auth(UserRole.TUTOR),
+  availabilityController.getTutorAvailability
+);
+
 
  
 export const availabilityRouter: Router = router; 

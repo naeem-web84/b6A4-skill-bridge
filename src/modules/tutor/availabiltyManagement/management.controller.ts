@@ -101,7 +101,50 @@ const createAvailabilitySlot = async (req: Request, res: Response) => {
   }
 };
 
+/* Get Tutor Availability */
+const getTutorAvailability = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    // Parse query parameters
+    const { date, startDate, endDate, isBooked } = req.query;
+
+    const filters: any = {};
+    if (date) filters.date = new Date(date as string);
+    if (startDate) filters.startDate = new Date(startDate as string);
+    if (endDate) filters.endDate = new Date(endDate as string);
+    if (isBooked !== undefined) filters.isBooked = isBooked === 'true';
+
+    const result = await availabilityService.getTutorAvailability(userId, filters);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: (result as any).availabilitySlots
+    });
+  } catch (error: any) {
+    console.error('Controller error getting availability:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+
+
 /* Export */
 export const availabilityController = {
   createAvailabilitySlot, 
+  getTutorAvailability,
 };
