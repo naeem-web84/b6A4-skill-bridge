@@ -1,5 +1,12 @@
 import { prisma } from "../../../lib/prisma";
 
+interface UpdateAvailabilitySlotInput {
+  date?: Date;
+  startTime?: Date;
+  endTime?: Date;
+  isBooked?: boolean;
+}
+
 /* Types */
 interface CreateAvailabilitySlotInput {
   date: Date;
@@ -201,6 +208,148 @@ const getAvailabilitySlotById = async (
 };
 
 
+/* Update Availability Slot */
+const updateAvailabilitySlot = async (
+  userId: string,
+  slotId: string,
+  data: UpdateAvailabilitySlotInput
+) => {
+  try {
+    // Get tutor profile
+    const tutorProfile = await prisma.tutorProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!tutorProfile) {
+      throw new Error('Tutor profile not found');
+    }
+
+    // Verify slot exists and belongs to tutor
+    const existingSlot = await prisma.availabilitySlot.findFirst({
+      where: {
+        id: slotId,
+        tutorProfileId: tutorProfile.id,
+        isBooked: false // Can't update booked slots
+      }
+    });
+
+    if (!existingSlot) {
+      throw new Error('Availability slot not found, booked, or access denied');
+    }
+
+    // Check for overlapping slots if time is being updated
+    if (data.startTime || data.endTime || data.date) {
+      const checkDate = data.date || existingSlot.date;
+      const checkStartTime = data.startTime || existingSlot.startTime;
+      const checkEndTime = data.endTime || existingSlot.endTime;
+
+      const overlappingSlot = await prisma.availabilitySlot.findFirst({
+        where: {
+          tutorProfileId: tutorProfile.id,
+          id: { not: slotId },
+          date: checkDate,
+          OR: [
+            {
+              AND: [
+                { startTime: { lte: checkStartTime } },
+                { endTime: { gt: checkStartTime } }
+              ]
+            },
+            {
+              AND: [
+                { startTime: { lt: checkEndTime } },
+                { endTime: { gte: checkEndTime } }
+              ]
+            },
+            {
+              AND: [
+                { startTime: { gte: checkStartTime } },
+                { endTime: { lte: checkEndTime } }
+              ]
+            }
+          ]
+        }
+      });
+
+      if (overlappingSlot) {
+        throw new Error('Updated time slot overlaps with existing availability');
+      }
+    }
+
+    // Update slot - handle undefined values
+    const updateData: any = {};
+    
+    if (data.date !== undefined) updateData.date = data.date;
+    if (data.startTime !== undefined) updateData.startTime = data.startTime;
+    if (data.endTime !== undefined) updateData.endTime = data.endTime;
+    if (data.isBooked !== undefined) updateData.isBooked = data.isBooked;
+
+    const updatedSlot = await prisma.availabilitySlot.update({
+      where: { id: slotId },
+      data: updateData
+    });
+
+    return {
+      success: true,
+      message: 'Availability slot updated successfully',
+      availabilitySlot: updatedSlot
+    };
+  } catch (error: any) {
+    console.error('Update availability slot error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to update availability slot'
+    };
+  }
+};
+
+/* Delete Availability Slot */
+const deleteAvailabilitySlot = async (
+  userId: string,
+  slotId: string
+) => {
+  try {
+    // Get tutor profile
+    const tutorProfile = await prisma.tutorProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!tutorProfile) {
+      throw new Error('Tutor profile not found');
+    }
+
+    // Verify slot exists and belongs to tutor
+    const existingSlot = await prisma.availabilitySlot.findFirst({
+      where: {
+        id: slotId,
+        tutorProfileId: tutorProfile.id,
+        isBooked: false // Can't delete booked slots
+      }
+    });
+
+    if (!existingSlot) {
+      throw new Error('Availability slot not found, booked, or access denied');
+    }
+
+    // Delete slot
+    await prisma.availabilitySlot.delete({
+      where: { id: slotId }
+    });
+
+    return {
+      success: true,
+      message: 'Availability slot deleted successfully'
+    };
+  } catch (error: any) {
+    console.error('Delete availability slot error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to delete availability slot'
+    };
+  }
+};
+
+
 
 
 
@@ -210,5 +359,7 @@ export const availabilityService = {
   createAvailabilitySlot, 
   getTutorAvailability,
   getAvailabilitySlotById,
+  updateAvailabilitySlot,
+  deleteAvailabilitySlot
 
 };

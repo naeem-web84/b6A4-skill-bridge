@@ -191,9 +191,118 @@ const getAvailabilitySlot = async (req: Request, res: Response) => {
   }
 };
 
+
+/* Update Availability Slot */
+const updateAvailabilitySlot = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { slotId } = req.params;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    if (!slotId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Slot ID is required'
+      });
+    }
+
+    const {
+      date,
+      startTime,
+      endTime,
+      isBooked
+    } = req.body;
+
+    // Prepare update data
+    const updateData: any = {};
+    if (date) updateData.date = new Date(date);
+    if (startTime) updateData.startTime = new Date(startTime);
+    if (endTime) updateData.endTime = new Date(endTime);
+    if (isBooked !== undefined) updateData.isBooked = isBooked;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No update data provided'
+      });
+    }
+
+    const result = await availabilityService.updateAvailabilitySlot(
+      userId, 
+      slotId, 
+      updateData
+    );
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: (result as any).availabilitySlot
+    });
+  } catch (error: any) {
+    console.error('Controller error updating slot:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+/* Delete Availability Slot */
+const deleteAvailabilitySlot = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { slotId } = req.params;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    if (!slotId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Slot ID is required'
+      });
+    }
+
+    const result = await availabilityService.deleteAvailabilitySlot(userId, slotId);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  } catch (error: any) {
+    console.error('Controller error deleting slot:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+
+
 /* Export */
 export const availabilityController = {
   createAvailabilitySlot, 
   getTutorAvailability,
   getAvailabilitySlot,
+  updateAvailabilitySlot,
+  deleteAvailabilitySlot
 };

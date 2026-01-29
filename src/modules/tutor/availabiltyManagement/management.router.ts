@@ -25,6 +25,20 @@ router.get(
   availabilityController.getAvailabilitySlot
 );
 
+// Update availability slot
+router.put(
+  '/:slotId',
+  auth(UserRole.TUTOR),
+  availabilityController.updateAvailabilitySlot
+);
+
+// Delete availability slot
+router.delete(
+  '/:slotId',
+  auth(UserRole.TUTOR),
+  availabilityController.deleteAvailabilitySlot
+);
+
 
  
 export const availabilityRouter: Router = router; 
