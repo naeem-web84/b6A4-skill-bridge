@@ -7,6 +7,7 @@ import { availabilityRouter } from "./modules/tutor/availabiltyManagement/manage
 import { studentRouter } from "./modules/student/student.router";
 import { categoryRouter } from "./modules/tutor/categoryMng/category.router";
 import { reviewRouter } from "./modules/tutor/review/review.router";
+import { dashboardRouter } from "./modules/tutor/dashboard/dash.router";
   
 
 const app: Application = express();
@@ -24,6 +25,8 @@ app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use("/api/tutors", tutorRouter);
 app.use("/api/tutors/availability", availabilityRouter);
 app.use("/api/tutors/categories", categoryRouter);
+
+app.use("/api/tutors/dashboard", dashboardRouter);
 
 app.use("/api/students", studentRouter);
 
