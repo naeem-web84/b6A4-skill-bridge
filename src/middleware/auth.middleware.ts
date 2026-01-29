@@ -91,7 +91,7 @@ export const authorize = (...allowedRoles: UserRole[]) => {
     };
 };
 
-// Combined middleware (authenticate + authorize)
+
 const auth = (...roles: UserRole[]) => {
     return [
         authenticate,
