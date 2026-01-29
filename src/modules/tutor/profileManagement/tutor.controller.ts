@@ -94,8 +94,60 @@ const getTutorProfile = async (req: Request, res: Response) => {
     }
 };
 
+
+const checkEligibility = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?.id;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
+
+        const result = await tutorService.checkTutorEligibility(userId);
+        
+        return res.status(200).json({
+            success: true,
+            ...result
+        });
+    } catch (error: any) {
+        console.error('Controller error checking eligibility:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+const getAvailableCategories = async (req: Request, res: Response) => {
+    try {
+        const result = await tutorService.getAvailableCategories();
+        
+        if (!result.success) {
+            return res.status(500).json(result);
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: result.categories
+        });
+    } catch (error: any) {
+        console.error('Controller error fetching categories:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+
 /* Export */
 export const tutorController = {
     createTutorProfile,
-    getTutorProfile
+    getTutorProfile,
+    checkEligibility,
+    getAvailableCategories,
+    
 };

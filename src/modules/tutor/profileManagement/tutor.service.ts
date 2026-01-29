@@ -1,5 +1,5 @@
-import { prisma } from "../../lib/prisma";
-import { UserRole } from "../../middleware/auth.middleware";
+import { prisma } from "../../../lib/prisma";
+import { UserRole } from "../../../middleware/auth.middleware";
 
 /* Types */
 interface CreateTutorProfileInput {
@@ -135,10 +135,62 @@ const getTutorProfileByUserId = async (userId: string) => {
   }
 };
 
+/*  Check Tutor Eligibility  */
+const checkTutorEligibility = async (userId: string) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
 
+    if (!user) {
+      return { canBecome: false, message: "User not found" };
+    }
+
+    if (user.role === UserRole.TUTOR) {
+      return { canBecome: false, message: "Already a tutor" };
+    }
+
+    const existingProfile = await prisma.tutorProfile.findUnique({
+      where: { userId },
+    });
+
+    if (existingProfile) {
+      return { canBecome: false, message: "Tutor profile already exists" };
+    }
+
+    return { canBecome: true };
+  } catch (error) {
+    console.error("Check eligibility error:", error);
+    return {
+      canBecome: false,
+      message: "Internal server error",
+    };
+  }
+};
+
+/*   Get All Categories */
+const getAvailableCategories = async () => {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { name: "asc" },
+    });
+
+    return { success: true, categories };
+  } catch (error) {
+    console.error("Fetch categories error:", error);
+    return {
+      success: false,
+      categories: [],
+      message: "Failed to fetch categories",
+    };
+  }
+};
 
  
 export const tutorService = {
   createTutorProfile, 
   getTutorProfileByUserId,
+  checkTutorEligibility,
+  getAvailableCategories,
+  
 };
