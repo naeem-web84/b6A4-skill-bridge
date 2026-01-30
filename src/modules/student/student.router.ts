@@ -4,10 +4,7 @@ import { studentController } from './student.controller';
 import auth, { UserRole } from '../../middleware/auth.middleware';
 
 const router: Router = Router();
-
-// ========== STUDENT PROFILE ROUTES ==========
-
-// ✅ ADDED: Create student profile (auto-called after signup or manually)
+ 
 router.post(
   '/profile', 
   auth(UserRole.STUDENT), 

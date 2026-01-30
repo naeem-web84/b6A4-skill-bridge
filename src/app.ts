@@ -1,3 +1,4 @@
+// app.ts
 import { toNodeHandler } from "better-auth/node";
 import express, { Application } from "express";
 import { auth } from "./lib/auth";
@@ -9,6 +10,7 @@ import { categoryRouter } from "./modules/tutor/categoryMng/category.router";
 import { dashboardRouter } from "./modules/tutor/dashboard/dash.router";
 import { publicTutorRouter } from "./modules/tutor/public/public.router"; 
 import { reviewRouter } from "./modules/tutor/review/review.router";
+import { adminRouter } from "./modules/admin/admin.router";
 
 const app: Application = express();
 
@@ -21,7 +23,10 @@ app.use(express.json());
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
-// Tutor routes
+// ADMIN ROUTES - Must come before other routes to avoid conflicts
+app.use("/api/admin", adminRouter);
+
+// TUTOR ROUTES
 app.use("/api/tutors", tutorRouter);
 app.use("/api/tutors/availability", availabilityRouter);
 app.use("/api/tutors/categories", categoryRouter);
@@ -29,14 +34,14 @@ app.use("/api/tutors/dashboard", dashboardRouter);
 app.use("/api/tutors/reviews", reviewRouter);
 app.use("/api/tutors/public", publicTutorRouter);  
 
-// Student routes
+ 
 app.use("/api/students", studentRouter);
 
+ 
 app.get("/", (req, res) => {
-    res.send("Hello, World!");
+    res.send("Hello, World! - Tutoring Platform API");
 });
 
-// app.use(notFound)
-// app.use(errorHandler)
+ 
 
 export default app;
