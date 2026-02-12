@@ -1,8 +1,9 @@
+// lib/auth.ts
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import nodemailer from "nodemailer";
- 
+
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
@@ -12,14 +13,19 @@ const transporter = nodemailer.createTransport({
     pass: process.env.APP_PASS,
   },
 });
- 
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
 
-  trustedOrigins: [process.env.APP_URL!],
- 
+  trustedOrigins: [
+    process.env.APP_URL!,
+    "https://skill-bridge-client-nu.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5000",
+  ],
+
   user: {
     additionalFields: {
       role: {
@@ -35,8 +41,7 @@ export const auth = betterAuth({
       },
     },
   },
-
-   
+  
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,  
@@ -46,10 +51,8 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-
     sendVerificationEmail: async ({ user, token }) => {
       const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`;
-
       await transporter.sendMail({
         from: '"Skill Bridge" <skillbridge@team.com>',
         to: user.email,
@@ -70,7 +73,6 @@ export const auth = betterAuth({
       accessType: "offline",
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-       
       mapProfileToUser: (profile) => {
         return {
           email: profile.email,
@@ -87,6 +89,9 @@ export const auth = betterAuth({
   },
  
   advanced: {
-    useSecureCookies: process.env.NODE_ENV === "production",
+    useSecureCookies: process.env.NODE_ENV === "production", 
+    crossSubDomainCookies: {
+      enabled: true,
+    },
   },
 });

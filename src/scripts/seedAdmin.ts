@@ -6,49 +6,47 @@ async function seedAdmin() {
     const adminData = {
       name: "Naeem Islam",
       email: "naeemislam.hasan74@gmail.com",
-      password: "admin1234",
+      password: "naeem1234",
       role: UserRole.STUDENT, 
     };
-
 
     const existingUser = await prisma.user.findUnique({
       where: { email: adminData.email },
     });
 
-    if (existingUser) {
+    if (existingUser) { 
       return;
     }
  
-
-    const response = await fetch(
-      "http://localhost:5000/api/auth/sign-up/email",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Origin": "http://localhost:3000"
-        },
-        body: JSON.stringify(adminData),
-      }
-    );
+    const betterAuthUrl = process.env.BETTER_AUTH_URL || "http://localhost:5000";
+    const signUpUrl = `${betterAuthUrl}/api/auth/sign-up/email`;
  
+
+    const response = await fetch(signUpUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Origin": process.env.APP_URL || "http://localhost:3000"
+      },
+      body: JSON.stringify(adminData),
+    });
 
     const result = await response.json();
- 
-    if (!response.ok) {
-      throw new Error("Signup API failed");
-    }
 
+    if (!response.ok) { 
+      throw new Error(`Signup API failed: ${result.message || response.statusText}`);
+    }
  
-     const updatedAdmin = await prisma.user.update({
+
+    const updatedAdmin = await prisma.user.update({
       where: { email: adminData.email },
       data: {
         role: UserRole.ADMIN,
         emailVerified: true,
       },
-    });
+    }); 
 
-  } catch (error) {
+  } catch (error) { 
     throw error;
   } finally {
     await prisma.$disconnect();
