@@ -1,3 +1,4 @@
+ 
 import { prisma } from "../../../lib/prisma";
 
 interface UpdateAvailabilitySlotInput {
@@ -7,7 +8,6 @@ interface UpdateAvailabilitySlotInput {
   isBooked?: boolean;
 }
 
-/* Types */
 interface CreateAvailabilitySlotInput {
   date: Date;
   startTime: Date;
@@ -18,13 +18,11 @@ interface CreateAvailabilitySlotInput {
   validUntil?: Date;
 }
 
-/* Create Availability Slot */
 const createAvailabilitySlot = async (
   userId: string,
   data: CreateAvailabilitySlotInput
 ) => {
   try {
-    // Get tutor profile first
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -33,7 +31,6 @@ const createAvailabilitySlot = async (
       throw new Error('Tutor profile not found');
     }
 
-    // Check for overlapping slots
     const overlappingSlot = await prisma.availabilitySlot.findFirst({
       where: {
         tutorProfileId: tutorProfile.id,
@@ -65,7 +62,6 @@ const createAvailabilitySlot = async (
       throw new Error('Time slot overlaps with existing availability');
     }
 
-    // Calculate duration in minutes
     const duration = Math.round(
       (new Date(data.endTime).getTime() - new Date(data.startTime).getTime()) / (1000 * 60)
     );
@@ -74,7 +70,6 @@ const createAvailabilitySlot = async (
       throw new Error('End time must be after start time');
     }
 
-    // Create availability slot - explicitly handle undefined values
     const availabilitySlot = await prisma.availabilitySlot.create({
       data: {
         tutorProfileId: tutorProfile.id,
@@ -82,9 +77,9 @@ const createAvailabilitySlot = async (
         startTime: data.startTime,
         endTime: data.endTime,
         isRecurring: data.isRecurring ?? false,
-        recurringPattern: data.recurringPattern ?? null, // Use null instead of undefined
-        validFrom: data.validFrom ?? null, // Use null instead of undefined
-        validUntil: data.validUntil ?? null, // Use null instead of undefined
+        recurringPattern: data.recurringPattern ?? null,
+        validFrom: data.validFrom ?? null,
+        validUntil: data.validUntil ?? null,
         isBooked: false
       }
     });
@@ -95,7 +90,6 @@ const createAvailabilitySlot = async (
       availabilitySlot
     };
   } catch (error: any) {
-    console.error('Create availability slot error:', error);
     return {
       success: false,
       message: error.message || 'Failed to create availability slot'
@@ -103,8 +97,6 @@ const createAvailabilitySlot = async (
   }
 };
 
-
-/* Get Tutor's Availability Slots */
 const getTutorAvailability = async (
   userId: string,
   filters?: {
@@ -115,7 +107,6 @@ const getTutorAvailability = async (
   }
 ) => {
   try {
-    // Get tutor profile
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -124,7 +115,6 @@ const getTutorAvailability = async (
       throw new Error('Tutor profile not found');
     }
 
-    // Build where conditions
     const whereConditions: any = {
       tutorProfileId: tutorProfile.id
     };
@@ -144,7 +134,6 @@ const getTutorAvailability = async (
       whereConditions.isBooked = filters.isBooked;
     }
 
-    // Get availability slots
     const availabilitySlots = await prisma.availabilitySlot.findMany({
       where: whereConditions,
       orderBy: [
@@ -158,7 +147,6 @@ const getTutorAvailability = async (
       availabilitySlots
     };
   } catch (error: any) {
-    console.error('Get tutor availability error:', error);
     return {
       success: false,
       message: 'Failed to get availability slots',
@@ -167,13 +155,11 @@ const getTutorAvailability = async (
   }
 };
 
-/* Get Single Availability Slot */
 const getAvailabilitySlotById = async (
   userId: string,
   slotId: string
 ) => {
   try {
-    // Get tutor profile
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -182,7 +168,6 @@ const getAvailabilitySlotById = async (
       throw new Error('Tutor profile not found');
     }
 
-    // Get slot and verify ownership
     const availabilitySlot = await prisma.availabilitySlot.findFirst({
       where: {
         id: slotId,
@@ -199,7 +184,6 @@ const getAvailabilitySlotById = async (
       availabilitySlot
     };
   } catch (error: any) {
-    console.error('Get availability slot error:', error);
     return {
       success: false,
       message: error.message || 'Failed to get availability slot'
@@ -207,15 +191,12 @@ const getAvailabilitySlotById = async (
   }
 };
 
-
-/* Update Availability Slot */
 const updateAvailabilitySlot = async (
   userId: string,
   slotId: string,
   data: UpdateAvailabilitySlotInput
 ) => {
   try {
-    // Get tutor profile
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -224,12 +205,11 @@ const updateAvailabilitySlot = async (
       throw new Error('Tutor profile not found');
     }
 
-    // Verify slot exists and belongs to tutor
     const existingSlot = await prisma.availabilitySlot.findFirst({
       where: {
         id: slotId,
         tutorProfileId: tutorProfile.id,
-        isBooked: false // Can't update booked slots
+        isBooked: false
       }
     });
 
@@ -237,7 +217,6 @@ const updateAvailabilitySlot = async (
       throw new Error('Availability slot not found, booked, or access denied');
     }
 
-    // Check for overlapping slots if time is being updated
     if (data.startTime || data.endTime || data.date) {
       const checkDate = data.date || existingSlot.date;
       const checkStartTime = data.startTime || existingSlot.startTime;
@@ -276,7 +255,6 @@ const updateAvailabilitySlot = async (
       }
     }
 
-    // Update slot - handle undefined values
     const updateData: any = {};
     
     if (data.date !== undefined) updateData.date = data.date;
@@ -295,7 +273,6 @@ const updateAvailabilitySlot = async (
       availabilitySlot: updatedSlot
     };
   } catch (error: any) {
-    console.error('Update availability slot error:', error);
     return {
       success: false,
       message: error.message || 'Failed to update availability slot'
@@ -303,13 +280,11 @@ const updateAvailabilitySlot = async (
   }
 };
 
-/* Delete Availability Slot */
 const deleteAvailabilitySlot = async (
   userId: string,
   slotId: string
 ) => {
   try {
-    // Get tutor profile
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -318,12 +293,11 @@ const deleteAvailabilitySlot = async (
       throw new Error('Tutor profile not found');
     }
 
-    // Verify slot exists and belongs to tutor
     const existingSlot = await prisma.availabilitySlot.findFirst({
       where: {
         id: slotId,
         tutorProfileId: tutorProfile.id,
-        isBooked: false // Can't delete booked slots
+        isBooked: false
       }
     });
 
@@ -331,7 +305,6 @@ const deleteAvailabilitySlot = async (
       throw new Error('Availability slot not found, booked, or access denied');
     }
 
-    // Delete slot
     await prisma.availabilitySlot.delete({
       where: { id: slotId }
     });
@@ -341,7 +314,6 @@ const deleteAvailabilitySlot = async (
       message: 'Availability slot deleted successfully'
     };
   } catch (error: any) {
-    console.error('Delete availability slot error:', error);
     return {
       success: false,
       message: error.message || 'Failed to delete availability slot'
@@ -349,17 +321,10 @@ const deleteAvailabilitySlot = async (
   }
 };
 
-
-
-
-
-
-/* Export */
 export const availabilityService = {
   createAvailabilitySlot, 
   getTutorAvailability,
   getAvailabilitySlotById,
   updateAvailabilitySlot,
   deleteAvailabilitySlot
-
 };

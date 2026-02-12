@@ -1,4 +1,3 @@
-// modules/student/student.router.ts
 import { Router } from 'express';  
 import { studentController } from './student.controller';
 import auth, { UserRole } from '../../middleware/auth.middleware';
@@ -22,24 +21,20 @@ router.put(
   auth(UserRole.STUDENT), 
   studentController.updateStudentProfile
 );
-
-// ========== BOOKING ROUTES ==========
-
-// Create booking
+ 
 router.post(
   '/bookings',
   auth(UserRole.STUDENT),
   studentController.createBooking
 );
 
-// Get student's bookings
 router.get(
   '/bookings',
   auth(UserRole.STUDENT),
   studentController.getStudentBookings
 );
 
-// Cancel booking
+ 
 router.delete(
   '/bookings/:bookingId',
   auth(UserRole.STUDENT),

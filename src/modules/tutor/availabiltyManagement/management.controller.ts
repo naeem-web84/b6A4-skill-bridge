@@ -1,7 +1,7 @@
+ 
 import { Request, Response } from 'express'; 
 import { availabilityService } from './management.service';
-
-/* Create Availability Slot */
+ 
 const createAvailabilitySlot = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -23,7 +23,6 @@ const createAvailabilitySlot = async (req: Request, res: Response) => {
       validUntil
     } = req.body;
 
-    // Validate required fields
     if (!date || !startTime || !endTime) {
       return res.status(400).json({
         success: false,
@@ -31,7 +30,6 @@ const createAvailabilitySlot = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate date format and logic
     const startDate = new Date(startTime);
     const endDate = new Date(endTime);
     const slotDate = new Date(date);
@@ -43,7 +41,6 @@ const createAvailabilitySlot = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate that end time is after start time
     if (endDate <= startDate) {
       return res.status(400).json({
         success: false,
@@ -51,14 +48,12 @@ const createAvailabilitySlot = async (req: Request, res: Response) => {
       });
     }
 
-    // Build input object
     const input: any = {
       date: slotDate,
       startTime: startDate,
       endTime: endDate
     };
 
-    // Only add optional fields if they are provided
     if (isRecurring !== undefined) {
       input.isRecurring = Boolean(isRecurring);
     }
@@ -93,7 +88,6 @@ const createAvailabilitySlot = async (req: Request, res: Response) => {
       data: result.availabilitySlot
     });
   } catch (error: any) {
-    console.error('Controller error creating availability slot:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -101,7 +95,6 @@ const createAvailabilitySlot = async (req: Request, res: Response) => {
   }
 };
 
-/* Get Tutor Availability */
 const getTutorAvailability = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -113,7 +106,6 @@ const getTutorAvailability = async (req: Request, res: Response) => {
       });
     }
 
-    // Parse query parameters
     const { date, startDate, endDate, isBooked } = req.query;
 
     const filters: any = {};
@@ -133,7 +125,6 @@ const getTutorAvailability = async (req: Request, res: Response) => {
       data: result.availabilitySlots
     });
   } catch (error: any) {
-    console.error('Controller error getting availability:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -141,7 +132,6 @@ const getTutorAvailability = async (req: Request, res: Response) => {
   }
 };
 
- 
 const getAvailabilitySlot = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -152,14 +142,12 @@ const getAvailabilitySlot = async (req: Request, res: Response) => {
         message: 'Authentication required'
       });
     }
- 
+
     const extractSlotId = (idParam: string | string[] | undefined): string | null => {
       if (!idParam) return null;
-      
       if (Array.isArray(idParam)) {
         return idParam[0] || null;
       }
-      
       return idParam;
     };
 
@@ -183,7 +171,6 @@ const getAvailabilitySlot = async (req: Request, res: Response) => {
       data: result.availabilitySlot
     });
   } catch (error: any) {
-    console.error('Controller error getting slot:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -191,8 +178,6 @@ const getAvailabilitySlot = async (req: Request, res: Response) => {
   }
 };
 
-
-/* Update Availability Slot */
 const updateAvailabilitySlot = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -219,7 +204,6 @@ const updateAvailabilitySlot = async (req: Request, res: Response) => {
       isBooked
     } = req.body;
 
-    // Prepare update data
     const updateData: any = {};
     if (date) updateData.date = new Date(date);
     if (startTime) updateData.startTime = new Date(startTime);
@@ -249,7 +233,6 @@ const updateAvailabilitySlot = async (req: Request, res: Response) => {
       data: (result as any).availabilitySlot
     });
   } catch (error: any) {
-    console.error('Controller error updating slot:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -257,7 +240,6 @@ const updateAvailabilitySlot = async (req: Request, res: Response) => {
   }
 };
 
-/* Delete Availability Slot */
 const deleteAvailabilitySlot = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -288,7 +270,6 @@ const deleteAvailabilitySlot = async (req: Request, res: Response) => {
       message: result.message
     });
   } catch (error: any) {
-    console.error('Controller error deleting slot:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -296,9 +277,6 @@ const deleteAvailabilitySlot = async (req: Request, res: Response) => {
   }
 };
 
-
-
-/* Export */
 export const availabilityController = {
   createAvailabilitySlot, 
   getTutorAvailability,

@@ -1,18 +1,15 @@
-// modules/tutor/reviews/review.service.ts
+ 
 import { prisma } from "../../../lib/prisma";
-
-/* ========== TYPES ========== */
+ 
 interface GetTutorReviewsFilters {
   page?: number;
   limit?: number;
   sortBy?: 'newest' | 'oldest' | 'highest' | 'lowest';
   minRating?: number;
 }
-
-/* ========== GET TUTOR'S REVIEWS ========== */
+ 
 const getTutorReviews = async (userId: string, filters?: GetTutorReviewsFilters) => {
-  try {
-    // Get tutor profile first
+  try { 
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -23,20 +20,17 @@ const getTutorReviews = async (userId: string, filters?: GetTutorReviewsFilters)
         message: 'Tutor profile not found'
       };
     }
-
-    // Build where conditions
+ 
     const whereConditions: any = {
       tutorProfileId: tutorProfile.id
     };
-
-    // Filter by minimum rating
+ 
     if (filters?.minRating && filters.minRating > 0) {
       whereConditions.rating = {
         gte: filters.minRating
       };
     }
-
-    // Determine sort order
+ 
     let orderBy: any = {};
     switch (filters?.sortBy) {
       case 'oldest':
@@ -53,13 +47,11 @@ const getTutorReviews = async (userId: string, filters?: GetTutorReviewsFilters)
         orderBy = { createdAt: 'desc' };
         break;
     }
-
-    // Pagination
+ 
     const page = filters?.page || 1;
     const limit = filters?.limit || 10;
     const skip = (page - 1) * limit;
-
-    // Get reviews with student and booking details
+ 
     const reviews = await prisma.review.findMany({
       where: whereConditions,
       include: {
@@ -89,8 +81,7 @@ const getTutorReviews = async (userId: string, filters?: GetTutorReviewsFilters)
       skip,
       take: limit
     });
-
-    // Get student user info for each review
+ 
     const reviewsWithUserInfo = await Promise.all(
       reviews.map(async (review) => {
         const studentUser = await prisma.user.findUnique({
@@ -109,8 +100,7 @@ const getTutorReviews = async (userId: string, filters?: GetTutorReviewsFilters)
         };
       })
     );
-
-    // Format response data
+ 
     const formattedReviews = reviewsWithUserInfo.map(review => ({
       id: review.id,
       rating: review.rating,
@@ -134,13 +124,11 @@ const getTutorReviews = async (userId: string, filters?: GetTutorReviewsFilters)
         category: review.booking.category?.name
       } : null
     }));
-
-    // Get total count for pagination
+ 
     const total = await prisma.review.count({
       where: whereConditions
     });
-
-    // Calculate statistics
+ 
     const stats = await prisma.review.aggregate({
       where: { tutorProfileId: tutorProfile.id },
       _avg: {
@@ -153,8 +141,7 @@ const getTutorReviews = async (userId: string, filters?: GetTutorReviewsFilters)
         rating: true
       }
     });
-
-    // Get rating distribution
+ 
     const ratingDistribution = await prisma.review.groupBy({
       by: ['rating'],
       where: { tutorProfileId: tutorProfile.id },
@@ -212,8 +199,7 @@ const getTutorReviews = async (userId: string, filters?: GetTutorReviewsFilters)
     };
   }
 };
-
-/* ========== EXPORT ========== */
+ 
 export const reviewService = {
   getTutorReviews
 };

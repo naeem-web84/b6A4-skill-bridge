@@ -1,4 +1,3 @@
- //Admon module types
 export interface UserFilters {
   page?: number;
   limit?: number;
@@ -6,6 +5,20 @@ export interface UserFilters {
   role?: string;
   status?: string;
   sortBy?: 'name' | 'email' | 'createdAt' | 'role';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface NotificationFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  userId?: string;
+  type?: string;
+  isRead?: boolean;
+  isDeleted?: boolean;
+  startDate?: Date;
+  endDate?: Date;
+  sortBy?: 'createdAt' | 'title';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -71,11 +84,11 @@ export interface UpdateTutorData {
 
 export interface UpdateCategoryData {
   name?: string;
-  description?: string;
+  description?: string | null;
 }
 
 export interface UpdateBookingData {
-  status?: string;
+  status?: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'RESCHEDULED' | null;
   amount?: number;
   isPaid?: boolean;
   meetingLink?: string;
@@ -90,7 +103,7 @@ export interface UpdateReviewData {
 
 export interface CreateCategoryData {
   name: string;
-  description?: string;
+  description?: string | null;
 }
 
 export interface CreateNotificationData {
@@ -119,7 +132,6 @@ export interface PlatformStats {
   recentRevenue: Array<{ date: string; amount: number }>;
 }
 
-/* ========== SERVICE RESPONSE TYPES ========== */
 export interface ServiceSuccessResponse<T = any> {
   success: true;
   message: string;

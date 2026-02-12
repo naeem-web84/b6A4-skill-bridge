@@ -1,3 +1,4 @@
+ 
 import { BookingStatus } from "../../../../generated/prisma/enums";
 import { prisma } from "../../../lib/prisma"; 
  
@@ -16,13 +17,11 @@ interface UpdateBookingStatusInput {
   meetingLink?: string;
 }
 
- 
 const getTutorBookings = async (
   userId: string,
   filters?: GetBookingsFilters
 ) => {
   try {
-     
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -31,7 +30,6 @@ const getTutorBookings = async (
       throw new Error('Tutor profile not found');
     }
 
-     
     const whereConditions: any = {
       tutorProfileId: tutorProfile.id
     };
@@ -59,12 +57,10 @@ const getTutorBookings = async (
       };
     }
 
-     
     const page = filters?.page || 1;
     const limit = filters?.limit || 10;
     const skip = (page - 1) * limit;
 
-    
     const bookings = await prisma.booking.findMany({
       where: whereConditions,
       include: {
@@ -107,10 +103,8 @@ const getTutorBookings = async (
       take: limit
     });
 
-     
     const bookingsWithUserInfo = await Promise.all(
       bookings.map(async (booking) => {
-         
         const user = await prisma.user.findUnique({
           where: { id: booking.studentUserId },
           select: {
@@ -127,7 +121,6 @@ const getTutorBookings = async (
       })
     );
 
-     
     const total = await prisma.booking.count({
       where: whereConditions
     });
@@ -143,7 +136,6 @@ const getTutorBookings = async (
       }
     };
   } catch (error: any) {
-    console.error('Get tutor bookings error:', error);
     return {
       success: false,
       message: 'Failed to get bookings',
@@ -158,13 +150,11 @@ const getTutorBookings = async (
   }
 };
 
- 
 const getBookingById = async (
   userId: string,
   bookingId: string
 ) => {
   try {
-    
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -173,7 +163,6 @@ const getBookingById = async (
       throw new Error('Tutor profile not found');
     }
 
-     
     const booking = await prisma.booking.findFirst({
       where: {
         id: bookingId,
@@ -220,7 +209,6 @@ const getBookingById = async (
       throw new Error('Booking not found or access denied');
     }
 
-     
     const user = await prisma.user.findUnique({
       where: { id: booking.studentUserId },
       select: {
@@ -238,7 +226,6 @@ const getBookingById = async (
       }
     };
   } catch (error: any) {
-    console.error('Get booking by ID error:', error);
     return {
       success: false,
       message: error.message || 'Failed to get booking details'
@@ -246,14 +233,12 @@ const getBookingById = async (
   }
 };
 
-/* Update Booking Status */
 const updateBookingStatus = async (
   userId: string,
   bookingId: string,
   data: UpdateBookingStatusInput
 ) => {
   try {
-     
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -262,7 +247,6 @@ const updateBookingStatus = async (
       throw new Error('Tutor profile not found');
     }
 
-     
     const existingBooking = await prisma.booking.findFirst({
       where: {
         id: bookingId,
@@ -274,7 +258,6 @@ const updateBookingStatus = async (
       throw new Error('Booking not found or access denied');
     }
 
-     
     const allowedTransitions: Record<BookingStatus, BookingStatus[]> = {
       PENDING: ['CONFIRMED', 'CANCELLED'],
       CONFIRMED: ['COMPLETED', 'CANCELLED', 'RESCHEDULED'],
@@ -288,24 +271,19 @@ const updateBookingStatus = async (
       throw new Error(`Cannot change status from ${existingBooking.status} to ${data.status}`);
     }
 
-     
     const updateData: any = {
       status: data.status
     };
 
-     
     if (data.meetingLink && data.status === 'CONFIRMED') {
       updateData.meetingLink = data.meetingLink;
     }
 
-     
     if (data.notes) {
       updateData.notes = data.notes;
     }
 
-     
     if (data.status === 'CANCELLED') {
-       
       if (existingBooking.availabilitySlotId) {
         await prisma.availabilitySlot.update({
           where: { id: existingBooking.availabilitySlotId },
@@ -315,7 +293,6 @@ const updateBookingStatus = async (
     }
 
     if (data.status === 'COMPLETED') {
-       
       await prisma.tutorProfile.update({
         where: { id: tutorProfile.id },
         data: {
@@ -326,13 +303,11 @@ const updateBookingStatus = async (
       });
     }
 
-     
     const updatedBooking = await prisma.booking.update({
       where: { id: bookingId },
       data: updateData
     });
 
-     
     const studentUser = await prisma.user.findUnique({
       where: { id: existingBooking.studentUserId },
       select: {
@@ -341,7 +316,6 @@ const updateBookingStatus = async (
       }
     });
 
-     
     if (data.status !== existingBooking.status) {
       await prisma.notification.create({
         data: {
@@ -364,7 +338,6 @@ const updateBookingStatus = async (
       }
     };
   } catch (error: any) {
-    console.error('Update booking status error:', error);
     return {
       success: false,
       message: error.message || 'Failed to update booking status'
@@ -372,7 +345,6 @@ const updateBookingStatus = async (
   }
 };
 
-/* Get Booking Statistics */
 const getBookingStats = async (userId: string) => {
   try {
     const tutorProfile = await prisma.tutorProfile.findUnique({
@@ -392,39 +364,33 @@ const getBookingStats = async (userId: string) => {
       upcomingBookings,
       totalEarnings
     ] = await Promise.all([
-      
       prisma.booking.count({
         where: { tutorProfileId: tutorProfile.id }
       }),
-       
       prisma.booking.count({
         where: {
           tutorProfileId: tutorProfile.id,
           status: 'PENDING'
         }
       }),
-       
       prisma.booking.count({
         where: {
           tutorProfileId: tutorProfile.id,
           status: 'CONFIRMED'
         }
       }),
-       
       prisma.booking.count({
         where: {
           tutorProfileId: tutorProfile.id,
           status: 'COMPLETED'
         }
       }),
-       
       prisma.booking.count({
         where: {
           tutorProfileId: tutorProfile.id,
           status: 'CANCELLED'
         }
       }),
-      
       prisma.booking.count({
         where: {
           tutorProfileId: tutorProfile.id,
@@ -434,7 +400,6 @@ const getBookingStats = async (userId: string) => {
           }
         }
       }),
-       
       prisma.booking.aggregate({
         where: {
           tutorProfileId: tutorProfile.id,
@@ -463,7 +428,6 @@ const getBookingStats = async (userId: string) => {
       }
     };
   } catch (error: any) {
-    console.error('Get booking stats error:', error);
     return {
       success: false,
       message: 'Failed to get booking statistics'
@@ -471,7 +435,6 @@ const getBookingStats = async (userId: string) => {
   }
 };
 
-/* Export */
 export const bookingService = {
   getTutorBookings,
   getBookingById,

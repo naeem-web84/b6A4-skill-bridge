@@ -1,9 +1,7 @@
-// modules/student/student.controller.ts
 import { Request, Response } from 'express';
-import { studentService } from './student.service'; 
+import { studentService } from './student.service';
 import { BookingStatus } from '../../../generated/prisma/enums';
 
-// Type definitions for service responses
 interface ServiceSuccessResponse {
   success: true;
   message: string;
@@ -23,9 +21,6 @@ interface ServiceErrorResponse {
 
 type ServiceResponse = ServiceSuccessResponse | ServiceErrorResponse;
 
-/* ========== PROFILE CONTROLLERS ========== */
-
-// ✅ ADDED: Create Student Profile
 const createStudentProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -50,7 +45,6 @@ const createStudentProfile = async (req: Request, res: Response) => {
       data: successResult.data
     });
   } catch (error: any) {
-    console.error('Controller error creating student profile:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -81,7 +75,6 @@ const getStudentProfile = async (req: Request, res: Response) => {
       data: successResult.data
     });
   } catch (error: any) {
-    console.error('Controller error getting student profile:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -118,7 +111,6 @@ const updateStudentProfile = async (req: Request, res: Response) => {
       data: successResult.data
     });
   } catch (error: any) {
-    console.error('Controller error updating student profile:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -126,7 +118,6 @@ const updateStudentProfile = async (req: Request, res: Response) => {
   }
 };
 
-/* ========== BOOKING CONTROLLERS ========== */
 const createBooking = async (req: Request, res: Response) => {
   try {
     const studentUserId = req.user?.id;
@@ -145,7 +136,6 @@ const createBooking = async (req: Request, res: Response) => {
       notes
     } = req.body;
 
-    // Validate required fields
     if (!tutorProfileId || !availabilitySlotId || !categoryId) {
       return res.status(400).json({
         success: false,
@@ -171,7 +161,6 @@ const createBooking = async (req: Request, res: Response) => {
       data: successResult.data
     });
   } catch (error: any) {
-    console.error('Controller error creating booking:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -190,7 +179,6 @@ const getStudentBookings = async (req: Request, res: Response) => {
       });
     }
 
-    // Parse query parameters
     const {
       status,
       page = '1',
@@ -225,7 +213,6 @@ const getStudentBookings = async (req: Request, res: Response) => {
       pagination: successResult.pagination
     });
   } catch (error: any) {
-    console.error('Controller error getting bookings:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -236,7 +223,7 @@ const getStudentBookings = async (req: Request, res: Response) => {
 const cancelBooking = async (req: Request, res: Response) => {
   try {
     const studentUserId = req.user?.id;
-    const { bookingId } = req.params;
+    const bookingId = Array.isArray(req.params.bookingId) ? req.params.bookingId[0] : req.params.bookingId;
     
     if (!studentUserId) {
       return res.status(401).json({
@@ -265,7 +252,6 @@ const cancelBooking = async (req: Request, res: Response) => {
       data: successResult.data
     });
   } catch (error: any) {
-    console.error('Controller error cancelling booking:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -273,14 +259,10 @@ const cancelBooking = async (req: Request, res: Response) => {
   }
 };
 
-/* ========== EXPORT ========== */
 export const studentController = {
-  // Profile
-  createStudentProfile,  // ✅ ADDED
+  createStudentProfile,
   getStudentProfile,
   updateStudentProfile,
-  
-  // Booking
   createBooking,
   getStudentBookings,
   cancelBooking

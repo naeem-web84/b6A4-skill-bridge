@@ -10,13 +10,12 @@ function errorHandler(
     let statusCode = 500;
     let errorMessage = "Internal Server Error";
     let errorDetails = err;
-
-    // PrismaClientValidationError
+ 
     if (err instanceof Prisma.PrismaClientValidationError) {
         statusCode = 400;
         errorMessage = "You provide incorrect field type or missing fields!"
     }
-    // PrismaClientKnownRequestError
+     
     else if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
             statusCode = 400;

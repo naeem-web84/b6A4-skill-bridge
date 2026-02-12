@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import nodemailer from "nodemailer";
-
+ 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
@@ -12,250 +12,81 @@ const transporter = nodemailer.createTransport({
     pass: process.env.APP_PASS,
   },
 });
-
+ 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+
   trustedOrigins: [process.env.APP_URL!],
-  
+ 
   user: {
     additionalFields: {
       role: {
         type: "string",
         required: true,
         defaultValue: "STUDENT",
-        input: true
+        input: true,
       },
       status: {
         type: "string",
+        required: false,
         defaultValue: "Active",
-        required: false
-      }
-    }
-  },
-  
-  emailAndPassword: {
-    enabled: true,
-    autoSignIn: false,
-    requireEmailVerification: true
-  },
-  
-  emailVerification: {
-    sendOnSignUp: true,
-    autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url, token }, request) => {
-      try {
-        const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`
-        const info = await transporter.sendMail({
-          from: '"Skill Bridge" <skillBridge@team.com>',
-          to: user.email,
-          subject: "Please verify your email!",
-          html: `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Email Verification</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #f4f6f8;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      background-color: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
-
-    .header {
-      background-color: #0f172a;
-      color: #ffffff;
-      padding: 20px;
-      text-align: center;
-    }
-
-    .header h1 {
-      margin: 0;
-      font-size: 22px;
-    }
-
-    .content {
-      padding: 30px;
-      color: #334155;
-      line-height: 1.6;
-    }
-
-    .content h2 {
-      margin-top: 0;
-      font-size: 20px;
-      color: #0f172a;
-    }
-
-    .button-wrapper {
-      text-align: center;
-      margin: 30px 0;
-    }
-
-    .verify-button {
-      background-color: #2563eb;
-      color: #ffffff !important;
-      padding: 14px 28px;
-      text-decoration: none;
-      font-weight: bold;
-      border-radius: 6px;
-      display: inline-block;
-    }
-
-    .verify-button:hover {
-      background-color: #1d4ed8;
-    }
-
-    .footer {
-      background-color: #f1f5f9;
-      padding: 20px;
-      text-align: center;
-      font-size: 13px;
-      color: #64748b;
-    }
-
-    .link {
-      word-break: break-all;
-      font-size: 13px;
-      color: #2563eb;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <h1>Skill Bridge</h1>
-    </div>
-
-    <!-- Content -->
-    <div class="content">
-      <h2>Verify Your Email Address</h2>
-      <p>
-        Hello ${user.name} <br /><br />
-        Thank you for registering on <strong>Skill Bridge</strong>.
-        Please confirm your email address to activate your account.
-      </p>
-
-      <div class="button-wrapper">
-        <a href="${verificationUrl}" class="verify-button">
-          Verify Email
-        </a>
-      </div>
-
-      <p>
-        If the button doesn't work, copy and paste the link below into your browser:
-      </p>
-
-      <p class="link">
-        ${url}
-      </p>
-
-      <p>
-        This verification link will expire soon for security reasons.
-        If you did not create an account, you can safely ignore this email.
-      </p>
-
-      <p>
-        Regards, <br />
-        <strong>Skill Bridge Team</strong>
-      </p>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      © 2025 Skill Bridge. All rights reserved.
-    </div>
-  </div>
-</body>
-</html>`
-        });
-
-        console.log("Verification email sent:", info.messageId);
-      } catch (err) {
-        console.error("Error sending verification email:", err);
-        throw err;
-      }
+      },
     },
   },
 
+   
+  emailAndPassword: {
+    enabled: true,
+    autoSignIn: true,  
+    requireEmailVerification: false,
+  },
+ 
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+
+    sendVerificationEmail: async ({ user, token }) => {
+      const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`;
+
+      await transporter.sendMail({
+        from: '"Skill Bridge" <skillbridge@team.com>',
+        to: user.email,
+        subject: "Please verify your email",
+        html: `
+          <h2>Verify Your Email</h2>
+          <p>Hello ${user.name ?? "User"},</p>
+          <p>Please verify your email by clicking the link below:</p>
+          <a href="${verificationUrl}">Verify Email</a>
+        `,
+      });
+    },
+  },
+ 
   socialProviders: {
     google: {
       prompt: "select_account consent",
       accessType: "offline",
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+       
+      mapProfileToUser: (profile) => {
+        return {
+          email: profile.email,
+          emailVerified: true,  
+          name: profile.name, 
+        };
+      },
     },
   },
-
-  // ✅ ADD THIS HOOK TO AUTO-CREATE STUDENT PROFILE
-  hooks: {
-    afterSignUp: async ({ user }) => {
-      try {
-        console.log(`📝 New user signed up: ${user.email} with role: ${user.role}`);
-        
-        // Auto-create student profile if role is STUDENT
-        if (user.role === "STUDENT") {
-          console.log(`🎓 Creating student profile for: ${user.id}`);
-          
-          // Match EXACTLY with your Prisma schema fields
-          await prisma.studentProfile.create({
-            data: {
-              userId: user.id,
-              // These are the exact fields from your schema
-              grade: null,           // String? - optional
-              subjects: [],          // String[] - default empty array
-              // createdAt and updatedAt will be auto-set by Prisma
-            }
-          });
-          
-          console.log(`✅ Successfully created student profile for user: ${user.id}`);
-        } else {
-          console.log(`ℹ️ User role is ${user.role}, skipping profile creation`);
-        }
-      } catch (error: any) {
-        console.error("❌ Error creating student profile:", error);
-        // Don't throw error here - we don't want signup to fail if profile creation fails
-        // Log it and continue
-      }
-    },
-    
-    // Optional: Also handle social login signups
-    afterSocialSignUp: async ({ user }) => {
-      try {
-        console.log(`📝 New social user signed up: ${user.email} with role: ${user.role}`);
-        
-        if (user.role === "STUDENT") {
-          // Check if profile already exists (in case of duplicate calls)
-          const existingProfile = await prisma.studentProfile.findUnique({
-            where: { userId: user.id }
-          });
-          
-          if (!existingProfile) {
-            await prisma.studentProfile.create({
-              data: {
-                userId: user.id,
-                grade: null,
-                subjects: []
-              }
-            });
-            console.log(`✅ Created student profile for social user: ${user.id}`);
-          }
-        }
-      } catch (error: any) {
-        console.error("❌ Error creating student profile for social user:", error);
-      }
-    }
-  }
+ 
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,  
+    updateAge: 60 * 60 * 24,  
+  },
+ 
+  advanced: {
+    useSecureCookies: process.env.NODE_ENV === "production",
+  },
 });

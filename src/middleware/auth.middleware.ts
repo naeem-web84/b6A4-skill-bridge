@@ -1,4 +1,3 @@
-// middlewares/auth.middleware.ts
 import { NextFunction, Request, Response } from "express";
 import { auth as betterAuth } from '../lib/auth'
 
@@ -23,12 +22,10 @@ declare global {
         }
     }
 }
-
-// Main authentication middleware
+ 
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // Get session from Better Auth
-        const session = await betterAuth.api.getSession({
+         const session = await betterAuth.api.getSession({
             headers: req.headers as any
         });
 
@@ -39,11 +36,9 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
             });
         }
 
-        // Extract role from additionalFields (default to STUDENT)
-        const userRole = (session.user.role as UserRole) || UserRole.STUDENT;
+         const userRole = (session.user.role as UserRole) || UserRole.STUDENT;
 
-        // Validate role
-        const validRoles = Object.values(UserRole);
+         const validRoles = Object.values(UserRole);
         if (!validRoles.includes(userRole)) {
             return res.status(403).json({
                 success: false,
@@ -51,8 +46,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
             });
         }
 
-        // Attach user to request
-        req.user = {
+         req.user = {
             id: session.user.id,
             email: session.user.email,
             name: session.user.name,
@@ -70,8 +64,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     }
 };
 
-// Role-based authorization middleware
-export const authorize = (...allowedRoles: UserRole[]) => {
+ export const authorize = (...allowedRoles: UserRole[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
         if (!req.user) {
             return res.status(401).json({

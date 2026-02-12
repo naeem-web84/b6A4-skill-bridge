@@ -1,8 +1,7 @@
-// modules/tutor/categoryMng/category.controller.ts
+
 import { Request, Response } from 'express';
 import { categoryService } from './category.service';
-
-// Type definitions for service responses
+ 
 interface ServiceSuccessResponse {
   success: true;
   message: string;
@@ -15,8 +14,7 @@ interface ServiceErrorResponse {
 }
 
 type ServiceResponse = ServiceSuccessResponse | ServiceErrorResponse;
-
-/* ========== ADD TEACHING CATEGORY ========== */
+ 
 const addTeachingCategory = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -29,8 +27,7 @@ const addTeachingCategory = async (req: Request, res: Response) => {
     }
 
     const { categoryId, proficiencyLevel } = req.body;
-
-    // Validate required fields
+ 
     if (!categoryId) {
       return res.status(400).json({
         success: false,
@@ -54,15 +51,14 @@ const addTeachingCategory = async (req: Request, res: Response) => {
       data: successResult.data
     });
   } catch (error: any) {
-    console.error('Controller error adding teaching category:', error);
+   
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
   }
 };
-
-/* ========== GET TUTOR'S CATEGORIES ========== */
+ 
 const getTutorCategories = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -93,8 +89,7 @@ const getTutorCategories = async (req: Request, res: Response) => {
     });
   }
 };
-
-/* ========== REMOVE TEACHING CATEGORY ========== */
+ 
 const removeTeachingCategory = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -107,7 +102,7 @@ const removeTeachingCategory = async (req: Request, res: Response) => {
       });
     }
 
-    if (!categoryId) {
+    if (!categoryId || typeof categoryId !== 'string') {
       return res.status(400).json({
         success: false,
         message: 'Category ID is required'
@@ -125,16 +120,14 @@ const removeTeachingCategory = async (req: Request, res: Response) => {
       success: true,
       message: successResult.message
     });
-  } catch (error: any) {
-    console.error('Controller error removing teaching category:', error);
+  } catch (error: any) { 
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
   }
 };
-
-/* ========== EXPORT ========== */
+ 
 export const categoryController = {
   addTeachingCategory,
   getTutorCategories,

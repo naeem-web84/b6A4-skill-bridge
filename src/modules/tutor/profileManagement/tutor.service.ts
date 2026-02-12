@@ -1,7 +1,6 @@
 import { prisma } from "../../../lib/prisma";
 import { UserRole } from "../../../middleware/auth.middleware";
-
-/* Types */
+ 
 interface CreateTutorProfileInput {
   headline: string;
   bio?: string;
@@ -14,15 +13,26 @@ interface CreateTutorProfileInput {
     proficiencyLevel?: string;
   }>;
 }
-
-/* Create Tutor Profile */
+ 
+interface UpdateTutorProfileInput {
+  headline?: string;
+  bio?: string;
+  hourlyRate?: number;
+  experienceYears?: number;
+  education?: string;
+  certifications?: string;
+  categories?: Array<{
+    categoryId: string;
+    proficiencyLevel?: string;
+  }>;
+}
+ 
 const createTutorProfile = async (
   userId: string,
   data: CreateTutorProfileInput
 ) => {
   try {
-    return await prisma.$transaction(async (tx) => {
-      /* 1. Check user */
+    return await prisma.$transaction(async (tx) => { 
       const user = await tx.user.findUnique({
         where: { id: userId },
       });
@@ -34,8 +44,7 @@ const createTutorProfile = async (
       if (user.role === UserRole.TUTOR) {
         throw new Error("User is already a tutor");
       }
-
-      /* 2. Check existing tutor profile */
+ 
       const existingProfile = await tx.tutorProfile.findUnique({
         where: { userId },
       });
@@ -43,16 +52,13 @@ const createTutorProfile = async (
       if (existingProfile) {
         throw new Error("Tutor profile already exists");
       }
-
-      /* 3. Update user role */
+ 
       await tx.user.update({
         where: { id: userId },
         data: {
           role: UserRole.TUTOR,
         },
-      });
-
-      /* 4. Create tutor profile */
+      }); 
       const tutorProfile = await tx.tutorProfile.create({
         data: {
           userId,
@@ -67,8 +73,7 @@ const createTutorProfile = async (
           completedSessions: 0,
         },
       });
-
-      /* 5. Attach categories (optional) */
+ 
       if (data.categories?.length) {
         await tx.tutorCategory.createMany({
           data: data.categories.map((category) => ({
@@ -78,8 +83,7 @@ const createTutorProfile = async (
           })),
         });
       }
-
-      /* 6. Return full profile */
+ 
       const completeProfile = await tx.tutorProfile.findUnique({
         where: { id: tutorProfile.id },
         include: {
@@ -105,8 +109,7 @@ const createTutorProfile = async (
     };
   }
 };
-
-/*  Get Tutor Profile by User ID */
+ 
 const getTutorProfileByUserId = async (userId: string) => {
   try {
     const profile = await prisma.tutorProfile.findUnique({
@@ -126,16 +129,14 @@ const getTutorProfileByUserId = async (userId: string) => {
     });
 
     return { success: true, profile };
-  } catch (error) {
-    console.error("Get tutor profile error:", error);
+  } catch (error) { 
     return {
       success: false,
       message: "Failed to get tutor profile",
     };
   }
 };
-
-/*  Check Tutor Eligibility  */
+ 
 const checkTutorEligibility = async (userId: string) => {
   try {
     const user = await prisma.user.findUnique({
@@ -159,16 +160,14 @@ const checkTutorEligibility = async (userId: string) => {
     }
 
     return { canBecome: true };
-  } catch (error) {
-    console.error("Check eligibility error:", error);
+  } catch (error) { 
     return {
       canBecome: false,
       message: "Internal server error",
     };
   }
 };
-
-/*   Get All Categories */
+ 
 const getAvailableCategories = async () => {
   try {
     const categories = await prisma.category.findMany({
@@ -176,8 +175,7 @@ const getAvailableCategories = async () => {
     });
 
     return { success: true, categories };
-  } catch (error) {
-    console.error("Fetch categories error:", error);
+  } catch (error) { 
     return {
       success: false,
       categories: [],
@@ -185,6 +183,92 @@ const getAvailableCategories = async () => {
     };
   }
 };
+ 
+const updateTutorProfile = async (
+  userId: string,
+  data: UpdateTutorProfileInput
+) => {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      
+      const existingProfile = await tx.tutorProfile.findUnique({
+        where: { userId },
+        include: {
+          categories: {
+            include: { category: true }
+          }
+        }
+      });
+
+      if (!existingProfile) {
+        throw new Error("Tutor profile not found");
+      }
+ 
+      const updateData: any = {};
+      
+      if (data.headline !== undefined) updateData.headline = data.headline;
+      if (data.bio !== undefined) updateData.bio = data.bio;
+      if (data.hourlyRate !== undefined) updateData.hourlyRate = data.hourlyRate;
+      if (data.experienceYears !== undefined) updateData.experienceYears = data.experienceYears;
+      if (data.education !== undefined) updateData.education = data.education;
+      if (data.certifications !== undefined) updateData.certifications = data.certifications;
+       
+      const updatedProfile = await tx.tutorProfile.update({
+        where: { userId },
+        data: updateData,
+        include: {
+          categories: {
+            include: { category: true }
+          }
+        }
+      });
+ 
+      if (data.categories !== undefined) { 
+        await tx.tutorCategory.deleteMany({
+          where: { tutorProfileId: existingProfile.id }
+        });
+ 
+        if (data.categories.length > 0) {
+          await tx.tutorCategory.createMany({
+            data: data.categories.map((category) => ({
+              tutorProfileId: existingProfile.id,
+              categoryId: category.categoryId,
+              proficiencyLevel: category.proficiencyLevel ?? "Intermediate"
+            }))
+          });
+ 
+          const profileWithCategories = await tx.tutorProfile.findUnique({
+            where: { userId },
+            include: {
+              categories: {
+                include: { category: true }
+              }
+            }
+          });
+
+          return {
+            success: true,
+            message: "Tutor profile updated successfully",
+            tutorProfile: profileWithCategories
+          };
+        }
+      }
+
+      return {
+        success: true,
+        message: "Tutor profile updated successfully",
+        tutorProfile: updatedProfile
+      };
+    });
+  } catch (error: any) {
+    console.error("Update tutor profile error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to update tutor profile"
+    };
+  }
+};
+
 
  
 export const tutorService = {
@@ -192,5 +276,6 @@ export const tutorService = {
   getTutorProfileByUserId,
   checkTutorEligibility,
   getAvailableCategories,
+  updateTutorProfile,
   
 };

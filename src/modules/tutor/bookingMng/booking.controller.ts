@@ -1,9 +1,8 @@
-// modules/tutor/bookingMng/booking.controller.ts
+ 
 import { Request, Response } from 'express';
 import { bookingService } from './booking.service'; 
 import { BookingStatus } from '../../../../generated/prisma/enums';
 
-/* Get Tutor's Bookings */
 const getTutorBookings = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -15,7 +14,6 @@ const getTutorBookings = async (req: Request, res: Response) => {
       });
     }
 
-    // Parse query parameters
     const {
       status,
       studentId,
@@ -55,7 +53,6 @@ const getTutorBookings = async (req: Request, res: Response) => {
       pagination: result.pagination
     });
   } catch (error: any) {
-    console.error('Controller error getting bookings:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -63,7 +60,6 @@ const getTutorBookings = async (req: Request, res: Response) => {
   }
 };
 
-/* Get Single Booking Details */
 const getBookingById = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -94,7 +90,6 @@ const getBookingById = async (req: Request, res: Response) => {
       data: result.data
     });
   } catch (error: any) {
-    console.error('Controller error getting booking:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -102,7 +97,6 @@ const getBookingById = async (req: Request, res: Response) => {
   }
 };
 
-/* Update Booking Status */
 const updateBookingStatus = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -154,7 +148,6 @@ const updateBookingStatus = async (req: Request, res: Response) => {
       data: result.data
     });
   } catch (error: any) {
-    console.error('Controller error updating booking status:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -162,7 +155,6 @@ const updateBookingStatus = async (req: Request, res: Response) => {
   }
 };
 
-/* Get Booking Statistics */
 const getBookingStats = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -185,7 +177,6 @@ const getBookingStats = async (req: Request, res: Response) => {
       data: result.data
     });
   } catch (error: any) {
-    console.error('Controller error getting booking stats:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -193,7 +184,6 @@ const getBookingStats = async (req: Request, res: Response) => {
   }
 };
 
-/* Export */
 export const bookingController = {
   getTutorBookings,
   getBookingById,

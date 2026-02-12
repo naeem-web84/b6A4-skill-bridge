@@ -1,16 +1,13 @@
-// modules/tutor/categoryMng/category.service.ts
+ 
 import { prisma } from "../../../lib/prisma";
-
-/* ========== TYPES ========== */
+ 
 interface AddTeachingCategoryInput {
   categoryId: string;
   proficiencyLevel?: string;
 }
-
-/* ========== ADD TEACHING CATEGORY ========== */
+ 
 const addTeachingCategory = async (userId: string, data: AddTeachingCategoryInput) => {
-  try {
-    // Get tutor profile first
+  try { 
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -21,8 +18,7 @@ const addTeachingCategory = async (userId: string, data: AddTeachingCategoryInpu
         message: 'Tutor profile not found'
       };
     }
-
-    // Check if category exists
+ 
     const category = await prisma.category.findUnique({
       where: { id: data.categoryId }
     });
@@ -33,8 +29,7 @@ const addTeachingCategory = async (userId: string, data: AddTeachingCategoryInpu
         message: 'Category not found'
       };
     }
-
-    // Check if tutor already has this category
+ 
     const existingTutorCategory = await prisma.tutorCategory.findFirst({
       where: {
         tutorProfileId: tutorProfile.id,
@@ -48,13 +43,12 @@ const addTeachingCategory = async (userId: string, data: AddTeachingCategoryInpu
         message: 'You already have this category added'
       };
     }
-
-    // Create tutor-category relationship
+ 
     const tutorCategory = await prisma.tutorCategory.create({
       data: {
         tutorProfileId: tutorProfile.id,
         categoryId: data.categoryId,
-        proficiencyLevel: data.proficiencyLevel
+        proficiencyLevel: data.proficiencyLevel ?? null
       },
       include: {
         category: {
@@ -72,19 +66,16 @@ const addTeachingCategory = async (userId: string, data: AddTeachingCategoryInpu
       message: 'Category added successfully',
       data: tutorCategory
     };
-  } catch (error: any) {
-    console.error('Add teaching category error:', error);
+  } catch (error: any) { 
     return {
       success: false,
       message: error.message || 'Failed to add teaching category'
     };
   }
 };
-
-/* ========== GET TUTOR'S CATEGORIES ========== */
+ 
 const getTutorCategories = async (userId: string) => {
-  try {
-    // Get tutor profile
+  try { 
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -95,8 +86,7 @@ const getTutorCategories = async (userId: string) => {
         message: 'Tutor profile not found'
       };
     }
-
-    // Get all tutor categories with category details
+ 
     const tutorCategories = await prisma.tutorCategory.findMany({
       where: {
         tutorProfileId: tutorProfile.id
@@ -115,8 +105,7 @@ const getTutorCategories = async (userId: string) => {
         createdAt: 'desc'
       }
     });
-
-    // Format response
+ 
     const categories = tutorCategories.map(tc => ({
       id: tc.id,
       proficiencyLevel: tc.proficiencyLevel,
@@ -128,8 +117,7 @@ const getTutorCategories = async (userId: string) => {
       success: true,
       data: categories
     };
-  } catch (error: any) {
-    console.error('Get tutor categories error:', error);
+  } catch (error: any) { 
     return {
       success: false,
       message: 'Failed to get tutor categories',
@@ -137,11 +125,9 @@ const getTutorCategories = async (userId: string) => {
     };
   }
 };
-
-/* ========== REMOVE TEACHING CATEGORY ========== */
+ 
 const removeTeachingCategory = async (userId: string, categoryId: string) => {
-  try {
-    // Get tutor profile
+  try { 
     const tutorProfile = await prisma.tutorProfile.findUnique({
       where: { userId }
     });
@@ -152,8 +138,7 @@ const removeTeachingCategory = async (userId: string, categoryId: string) => {
         message: 'Tutor profile not found'
       };
     }
-
-    // Find the tutor-category relationship
+ 
     const tutorCategory = await prisma.tutorCategory.findFirst({
       where: {
         tutorProfileId: tutorProfile.id,
@@ -167,8 +152,7 @@ const removeTeachingCategory = async (userId: string, categoryId: string) => {
         message: 'Category not found in your teaching categories'
       };
     }
-
-    // Check if this category has any bookings
+ 
     const existingBookings = await prisma.booking.findFirst({
       where: {
         tutorProfileId: tutorProfile.id,
@@ -185,8 +169,7 @@ const removeTeachingCategory = async (userId: string, categoryId: string) => {
         message: 'Cannot remove category with active or pending bookings'
       };
     }
-
-    // Delete the tutor-category relationship
+ 
     await prisma.tutorCategory.delete({
       where: { id: tutorCategory.id }
     });
@@ -195,16 +178,14 @@ const removeTeachingCategory = async (userId: string, categoryId: string) => {
       success: true,
       message: 'Category removed successfully'
     };
-  } catch (error: any) {
-    console.error('Remove teaching category error:', error);
+  } catch (error: any) { 
     return {
       success: false,
       message: error.message || 'Failed to remove teaching category'
     };
   }
 };
-
-/* ========== EXPORT ========== */
+ 
 export const categoryService = {
   addTeachingCategory,
   getTutorCategories,

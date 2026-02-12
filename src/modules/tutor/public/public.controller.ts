@@ -1,11 +1,9 @@
-// modules/tutor/public/public.controller.ts
+
 import { Request, Response } from 'express';
 import { publicTutorService } from './public.service';
-
-/* ========== BROWSE/SEARCH TUTORS ========== */
+ 
 const browseTutors = async (req: Request, res: Response) => {
-  try {
-    // Extract query parameters for filtering/searching
+  try { 
     const {
       page = '1',
       limit = '10',
@@ -18,23 +16,23 @@ const browseTutors = async (req: Request, res: Response) => {
       sortOrder = 'desc'
     } = req.query;
 
-    const filters = {
+    const filters: any = {
       page: parseInt(page as string),
       limit: parseInt(limit as string),
-      search: search as string,
-      category: category as string,
-      minRating: minRating ? parseFloat(minRating as string) : undefined,
-      maxHourlyRate: maxHourlyRate ? parseFloat(maxHourlyRate as string) : undefined,
-      experienceYears: experienceYears ? parseInt(experienceYears as string) : undefined,
       sortBy: sortBy as 'rating' | 'hourlyRate' | 'experienceYears' | 'totalReviews',
       sortOrder: sortOrder as 'asc' | 'desc'
     };
 
+    if (search) filters.search = search as string;
+    if (category) filters.category = category as string;
+    if (minRating) filters.minRating = parseFloat(minRating as string);
+    if (maxHourlyRate) filters.maxHourlyRate = parseFloat(maxHourlyRate as string);
+    if (experienceYears) filters.experienceYears = parseInt(experienceYears as string);
+
     const result = await publicTutorService.browseTutors(filters);
     
     return res.status(200).json(result);
-  } catch (error: any) {
-    console.error('Browse tutors controller error:', error);
+  } catch (error: any) { 
     return res.status(500).json({
       success: false,
       message: 'Failed to browse tutors',
@@ -42,11 +40,10 @@ const browseTutors = async (req: Request, res: Response) => {
     });
   }
 };
-
-/* ========== GET SPECIFIC TUTOR PROFILE ========== */
+ 
 const getTutorProfile = async (req: Request, res: Response) => {
   try {
-    const { tutorId } = req.params;
+    const tutorId = Array.isArray(req.params.tutorId) ? req.params.tutorId[0] : req.params.tutorId;
     
     if (!tutorId) {
       return res.status(400).json({
@@ -62,8 +59,7 @@ const getTutorProfile = async (req: Request, res: Response) => {
     }
 
     return res.status(200).json(result);
-  } catch (error: any) {
-    console.error('Get tutor profile controller error:', error);
+  } catch (error: any) { 
     return res.status(500).json({
       success: false,
       message: 'Failed to get tutor profile',
@@ -71,8 +67,7 @@ const getTutorProfile = async (req: Request, res: Response) => {
     });
   }
 };
-
-/* ========== GET TUTOR AVAILABILITY ========== */
+ 
 const getTutorAvailability = async (req: Request, res: Response) => {
   try {
     const { tutorId } = req.params;
@@ -85,20 +80,22 @@ const getTutorAvailability = async (req: Request, res: Response) => {
       });
     }
 
-    const filters = {
-      startDate: startDate ? new Date(startDate as string) : undefined,
-      endDate: endDate ? new Date(endDate as string) : undefined
-    };
+    const filters: any = {};
+    if (startDate) {
+      filters.startDate = new Date(startDate as string);
+    }
+    if (endDate) {
+      filters.endDate = new Date(endDate as string);
+    }
 
-    const result = await publicTutorService.getTutorAvailability(tutorId, filters);
+    const result = await publicTutorService.getTutorAvailability(tutorId as string, filters);
     
     if (!result.success) {
       return res.status(404).json(result);
     }
 
     return res.status(200).json(result);
-  } catch (error: any) {
-    console.error('Get tutor availability controller error:', error);
+  } catch (error: any) { 
     return res.status(500).json({
       success: false,
       message: 'Failed to get tutor availability',
@@ -106,8 +103,7 @@ const getTutorAvailability = async (req: Request, res: Response) => {
     });
   }
 };
-
-/* ========== EXPORT ========== */
+ 
 export const publicTutorController = {
   browseTutors,
   getTutorProfile,

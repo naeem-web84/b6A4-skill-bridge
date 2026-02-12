@@ -1,14 +1,11 @@
-// modules/student/student.service.ts
 import { BookingStatus } from "../../../generated/prisma/enums";
-import { prisma } from "../../lib/prisma"; 
+import { prisma } from "../../lib/prisma";
 
-/* ========== PROFILE TYPES ========== */
 interface UpdateStudentProfileInput {
   grade?: string;
   subjects?: string[];
 }
 
-/* ========== BOOKING TYPES ========== */
 interface CreateBookingInput {
   tutorProfileId: string;
   availabilitySlotId: string;
@@ -16,12 +13,8 @@ interface CreateBookingInput {
   notes?: string;
 }
 
-/* ========== PROFILE SERVICES ========== */
-
-// ✅ ADDED: Create Student Profile Service
 const createStudentProfile = async (userId: string) => {
   try {
-    // Check if user exists and is a STUDENT
     const user = await prisma.user.findUnique({
       where: { id: userId }
     });
@@ -40,7 +33,6 @@ const createStudentProfile = async (userId: string) => {
       };
     }
 
-    // Check if profile already exists
     const existingProfile = await prisma.studentProfile.findUnique({
       where: { userId }
     });
@@ -52,7 +44,6 @@ const createStudentProfile = async (userId: string) => {
       };
     }
 
-    // Create student profile with default values
     const profile = await prisma.studentProfile.create({
       data: {
         userId,
@@ -67,7 +58,6 @@ const createStudentProfile = async (userId: string) => {
       data: profile
     };
   } catch (error: any) {
-    console.error('Create student profile error:', error);
     return {
       success: false,
       message: error.message || 'Failed to create student profile'
@@ -109,7 +99,6 @@ const getStudentProfile = async (userId: string) => {
       data: profile
     };
   } catch (error: any) {
-    console.error('Get student profile error:', error);
     return {
       success: false,
       message: 'Failed to get student profile'
@@ -119,7 +108,6 @@ const getStudentProfile = async (userId: string) => {
 
 const updateStudentProfile = async (userId: string, data: UpdateStudentProfileInput) => {
   try {
-    // Build update data object conditionally
     const updateData: any = {};
     
     if (data.grade !== undefined) {
@@ -130,7 +118,6 @@ const updateStudentProfile = async (userId: string, data: UpdateStudentProfileIn
       updateData.subjects = data.subjects;
     }
 
-    // Check if there's anything to update
     if (Object.keys(updateData).length === 0) {
       return {
         success: false,
@@ -149,7 +136,6 @@ const updateStudentProfile = async (userId: string, data: UpdateStudentProfileIn
       data: profile
     };
   } catch (error: any) {
-    console.error('Update student profile error:', error);
     return {
       success: false,
       message: 'Failed to update profile'
@@ -157,11 +143,9 @@ const updateStudentProfile = async (userId: string, data: UpdateStudentProfileIn
   }
 };
 
-/* ========== BOOKING SERVICES ========== */
 const createBooking = async (studentUserId: string, data: CreateBookingInput) => {
   try {
     return await prisma.$transaction(async (tx) => {
-      /* 1. Check student profile exists */
       const studentProfile = await tx.studentProfile.findUnique({
         where: { userId: studentUserId }
       });
@@ -170,7 +154,6 @@ const createBooking = async (studentUserId: string, data: CreateBookingInput) =>
         throw new Error('Student profile not found');
       }
 
-      /* 2. Check tutor profile exists */
       const tutorProfile = await tx.tutorProfile.findUnique({
         where: { id: data.tutorProfileId }
       });
@@ -179,7 +162,6 @@ const createBooking = async (studentUserId: string, data: CreateBookingInput) =>
         throw new Error('Tutor not found');
       }
 
-      /* 3. Check availability slot exists and is free */
       const availabilitySlot = await tx.availabilitySlot.findUnique({
         where: { id: data.availabilitySlotId }
       });
@@ -200,7 +182,6 @@ const createBooking = async (studentUserId: string, data: CreateBookingInput) =>
         throw new Error('Cannot book past time slots');
       }
 
-      /* 4. Check category exists */
       const category = await tx.category.findUnique({
         where: { id: data.categoryId }
       });
@@ -209,14 +190,12 @@ const createBooking = async (studentUserId: string, data: CreateBookingInput) =>
         throw new Error('Category not found');
       }
 
-      /* 5. Calculate duration and amount */
       const duration = Math.round(
         (availabilitySlot.endTime.getTime() - availabilitySlot.startTime.getTime()) / (1000 * 60)
       );
       
       const amount = tutorProfile.hourlyRate * (duration / 60);
 
-      /* 6. Create booking */
       const bookingData: any = {
         studentUserId,
         tutorUserId: tutorProfile.userId,
@@ -233,7 +212,6 @@ const createBooking = async (studentUserId: string, data: CreateBookingInput) =>
         isPaid: false
       };
 
-      // Handle optional notes
       if (data.notes !== undefined) {
         bookingData.notes = data.notes;
       }
@@ -242,13 +220,11 @@ const createBooking = async (studentUserId: string, data: CreateBookingInput) =>
         data: bookingData
       });
 
-      /* 7. Mark availability slot as booked */
       await tx.availabilitySlot.update({
         where: { id: data.availabilitySlotId },
         data: { isBooked: true }
       });
 
-      /* 8. Get tutor user for notification */
       const tutorUser = await tx.user.findUnique({
         where: { id: tutorProfile.userId },
         select: {
@@ -257,7 +233,6 @@ const createBooking = async (studentUserId: string, data: CreateBookingInput) =>
         }
       });
 
-      /* 9. Create notification for tutor */
       await tx.notification.create({
         data: {
           userId: tutorProfile.userId,
@@ -269,7 +244,6 @@ const createBooking = async (studentUserId: string, data: CreateBookingInput) =>
         }
       });
 
-      /* 10. Return booking with details */
       const bookingWithDetails = await tx.booking.findUnique({
         where: { id: booking.id },
         include: {
@@ -296,7 +270,6 @@ const createBooking = async (studentUserId: string, data: CreateBookingInput) =>
         }
       });
 
-      // Add tutor user info
       const result = {
         ...bookingWithDetails,
         tutorUser
@@ -309,7 +282,6 @@ const createBooking = async (studentUserId: string, data: CreateBookingInput) =>
       };
     });
   } catch (error: any) {
-    console.error('Create booking error:', error);
     return {
       success: false,
       message: error.message || 'Failed to create booking'
@@ -326,7 +298,6 @@ const getStudentBookings = async (
   }
 ) => {
   try {
-    // Build where conditions
     const whereConditions: any = {
       studentUserId
     };
@@ -335,12 +306,10 @@ const getStudentBookings = async (
       whereConditions.status = filters.status;
     }
 
-    // Pagination
     const page = filters?.page || 1;
     const limit = filters?.limit || 10;
     const skip = (page - 1) * limit;
 
-    // Get bookings
     const bookings = await prisma.booking.findMany({
       where: whereConditions,
       include: {
@@ -378,7 +347,6 @@ const getStudentBookings = async (
       take: limit
     });
 
-    // Get tutor user info for each booking
     const bookingsWithUserInfo = await Promise.all(
       bookings.map(async (booking) => {
         const tutorUser = await prisma.user.findUnique({
@@ -397,7 +365,6 @@ const getStudentBookings = async (
       })
     );
 
-    // Get total count
     const total = await prisma.booking.count({
       where: whereConditions
     });
@@ -413,7 +380,6 @@ const getStudentBookings = async (
       }
     };
   } catch (error: any) {
-    console.error('Get student bookings error:', error);
     return {
       success: false,
       message: 'Failed to get bookings',
@@ -431,7 +397,6 @@ const getStudentBookings = async (
 const cancelBooking = async (studentUserId: string, bookingId: string) => {
   try {
     return await prisma.$transaction(async (tx) => {
-      /* 1. Check booking exists and belongs to student */
       const booking = await tx.booking.findFirst({
         where: {
           id: bookingId,
@@ -443,7 +408,6 @@ const cancelBooking = async (studentUserId: string, bookingId: string) => {
         throw new Error('Booking not found or access denied');
       }
 
-      /* 2. Check if booking can be cancelled */
       if (booking.status === 'CANCELLED') {
         throw new Error('Booking is already cancelled');
       }
@@ -452,25 +416,21 @@ const cancelBooking = async (studentUserId: string, bookingId: string) => {
         throw new Error('Cannot cancel completed booking');
       }
 
-      // Prepare update data
       const updateData: any = {
         status: 'CANCELLED'
       };
 
-      // Handle notes update
       if (booking.notes) {
         updateData.notes = `${booking.notes}\n[Cancelled by student]`;
       } else {
         updateData.notes = 'Cancelled by student';
       }
 
-      /* 3. Update booking status */
       const updatedBooking = await tx.booking.update({
         where: { id: bookingId },
         data: updateData
       });
 
-      /* 4. Free up availability slot if exists */
       if (booking.availabilitySlotId) {
         await tx.availabilitySlot.update({
           where: { id: booking.availabilitySlotId },
@@ -478,7 +438,6 @@ const cancelBooking = async (studentUserId: string, bookingId: string) => {
         });
       }
 
-      /* 5. Create notification for tutor */
       await tx.notification.create({
         data: {
           userId: booking.tutorUserId,
@@ -497,7 +456,6 @@ const cancelBooking = async (studentUserId: string, bookingId: string) => {
       };
     });
   } catch (error: any) {
-    console.error('Cancel booking error:', error);
     return {
       success: false,
       message: error.message || 'Failed to cancel booking'
@@ -505,14 +463,10 @@ const cancelBooking = async (studentUserId: string, bookingId: string) => {
   }
 };
 
-/* ========== EXPORT ========== */
 export const studentService = {
-  // Profile
-  createStudentProfile,  // ✅ ADDED
+  createStudentProfile,
   getStudentProfile,
   updateStudentProfile,
-  
-  // Booking
   createBooking,
   getStudentBookings,
   cancelBooking

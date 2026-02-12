@@ -1,8 +1,7 @@
-// modules/tutor/reviews/review.controller.ts
+ 
 import { Request, Response } from 'express';
 import { reviewService } from './review.service';
-
-// Type definitions for service responses
+ 
 interface ServiceSuccessResponse {
   success: true;
   message: string;
@@ -21,8 +20,7 @@ interface ServiceErrorResponse {
 }
 
 type ServiceResponse = ServiceSuccessResponse | ServiceErrorResponse;
-
-/* ========== GET TUTOR'S REVIEWS ========== */
+ 
 const getTutorReviews = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -33,8 +31,7 @@ const getTutorReviews = async (req: Request, res: Response) => {
         message: 'Authentication required'
       });
     }
-
-    // Parse query parameters
+ 
     const {
       page = '1',
       limit = '10',
@@ -61,16 +58,14 @@ const getTutorReviews = async (req: Request, res: Response) => {
       data: successResult.data,
       pagination: successResult.pagination
     });
-  } catch (error: any) {
-    console.error('Controller error getting tutor reviews:', error);
+  } catch (error: any) { 
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
   }
 };
-
-/* ========== EXPORT ========== */
+ 
 export const reviewController = {
   getTutorReviews
 };
